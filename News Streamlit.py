@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -12,17 +6,17 @@ import streamlit as st
 from pathlib import Path
 
 # -----------------------------------
-# STREAMLIT PAGE CONFIG
+# STREAMLIT CONFIG
 # -----------------------------------
 
 st.set_page_config(
-    page_title="News Scraper Dashboard",
+    page_title="News Dashboard",
     page_icon="📰",
     layout="wide"
 )
 
 st.title("📰 Financial & Political News Dashboard")
-st.markdown("Real-time news scraping from multiple news sources.")
+st.markdown("Noticias financieras y políticas en tiempo real.")
 
 # -----------------------------------
 # CSV FILE
@@ -30,13 +24,13 @@ st.markdown("Real-time news scraping from multiple news sources.")
 
 CSV_PATH = "HistNews.csv"
 
-# Create CSV if it does not exist
+# Crear archivo si no existe
 if not Path(CSV_PATH).exists():
     df_init = pd.DataFrame(columns=["source", "title", "link"])
     df_init.to_csv(CSV_PATH, index=False)
 
 # -----------------------------------
-# GENERIC REQUEST FUNCTION
+# HEADERS
 # -----------------------------------
 
 HEADERS = {
@@ -47,10 +41,18 @@ HEADERS = {
     )
 }
 
+# -----------------------------------
+# GENERIC REQUEST FUNCTION
+# -----------------------------------
 
 def get_soup(url):
+
     try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
+        response = requests.get(
+            url,
+            headers=HEADERS,
+            timeout=10
+        )
 
         if response.status_code == 200:
             return BeautifulSoup(response.text, "html.parser")
@@ -61,12 +63,12 @@ def get_soup(url):
         st.warning(f"Error loading {url}: {e}")
         return None
 
-
 # -----------------------------------
 # SCRAP FUNCTIONS
 # -----------------------------------
 
 def scrap_eleconomista():
+
     url = "https://www.eleconomista.com.mx/"
     soup = get_soup(url)
 
@@ -81,6 +83,7 @@ def scrap_eleconomista():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = match[1].strip()
 
@@ -97,6 +100,7 @@ def scrap_eleconomista():
 
 
 def scrap_eleconomista_emp():
+
     url = "https://www.eleconomista.com.mx/empresas"
     soup = get_soup(url)
 
@@ -111,6 +115,7 @@ def scrap_eleconomista_emp():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = re.sub(r"<.*?>", "", match[1]).strip()
 
@@ -127,6 +132,7 @@ def scrap_eleconomista_emp():
 
 
 def scrap_eleconomista_eco():
+
     url = "https://www.eleconomista.com.mx/economia"
     soup = get_soup(url)
 
@@ -141,6 +147,7 @@ def scrap_eleconomista_eco():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = re.sub(r"<.*?>", "", match[1]).strip()
 
@@ -157,6 +164,7 @@ def scrap_eleconomista_eco():
 
 
 def scrap_expansion():
+
     url = "https://expansion.mx/"
     soup = get_soup(url)
 
@@ -171,6 +179,7 @@ def scrap_expansion():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = match[1].strip()
 
@@ -187,6 +196,7 @@ def scrap_expansion():
 
 
 def scrap_elfinanciero():
+
     url = "https://www.elfinanciero.com.mx/"
     soup = get_soup(url)
 
@@ -201,6 +211,7 @@ def scrap_elfinanciero():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = match[1].strip()
 
@@ -217,6 +228,7 @@ def scrap_elfinanciero():
 
 
 def scrap_cnbc():
+
     url = "https://www.cnbc.com/business/"
     soup = get_soup(url)
 
@@ -231,6 +243,7 @@ def scrap_cnbc():
     rows = []
 
     for match in matches:
+
         link = match[0]
         title = match[1].strip()
 
@@ -247,6 +260,7 @@ def scrap_cnbc():
 
 
 def scrap_yahoo():
+
     url = "https://finance.yahoo.com/"
     soup = get_soup(url)
 
@@ -261,6 +275,7 @@ def scrap_yahoo():
     rows = []
 
     for match in matches:
+
         rows.append({
             "source": "Yahoo Finance",
             "title": match[1].strip(),
@@ -268,7 +283,6 @@ def scrap_yahoo():
         })
 
     return pd.DataFrame(rows)
-
 
 # -----------------------------------
 # RUN ALL SCRAPERS
@@ -289,11 +303,10 @@ def run_scrap():
 
     df_news = pd.concat(dfs, ignore_index=True)
 
-    # Clean duplicates
+    # Eliminar duplicados
     df_news = df_news.drop_duplicates(subset=["title"])
 
     return df_news
-
 
 # -----------------------------------
 # HISTORICAL NEWS FUNCTION
@@ -305,26 +318,44 @@ def hist_news(csv_path, df_news):
         df_hist = pd.read_csv(csv_path)
 
     except:
-        df_hist = pd.DataFrame(columns=["source", "title", "link"])
+        df_hist = pd.DataFrame(
+            columns=["source", "title", "link"]
+        )
 
     df_hist["Category"] = "Historical"
     df_news["Category"] = "Current"
 
-    df_all = pd.concat([df_hist, df_news], ignore_index=True)
+    df_all = pd.concat(
+        [df_hist, df_news],
+        ignore_index=True
+    )
 
-    df_unique = df_all.drop_duplicates(subset="title", keep=False)
+    df_unique = df_all.drop_duplicates(
+        subset="title",
+        keep=False
+    )
 
-    df_filtered = df_unique[df_unique["Category"] == "Current"]
+    df_filtered = df_unique[
+        df_unique["Category"] == "Current"
+    ]
 
-    df_updated = pd.concat([df_hist, df_filtered], ignore_index=True)
+    df_updated = pd.concat(
+        [df_hist, df_filtered],
+        ignore_index=True
+    )
 
     df_updated.to_csv(csv_path, index=False)
 
     return df_updated
 
+# -----------------------------------
+# SIDEBAR
+# -----------------------------------
+
+st.sidebar.header("⚙️ Filters")
 
 # -----------------------------------
-# BUTTON
+# LOAD DATA
 # -----------------------------------
 
 if st.button("🔄 Refresh News"):
@@ -333,33 +364,45 @@ if st.button("🔄 Refresh News"):
 
         df_news = run_scrap()
 
-        df_all_news = hist_news(CSV_PATH, df_news)
+        df_all_news = hist_news(
+            CSV_PATH,
+            df_news
+        )
 
         df_current = df_all_news[
             df_all_news["Category"] == "Current"
         ].copy()
 
-        st.success(f"Loaded {len(df_current)} current news articles.")
+        st.success(
+            f"{len(df_current)} noticias cargadas."
+        )
 
         # -----------------------------------
         # FILTERS
         # -----------------------------------
 
-        sources = sorted(df_current["source"].unique())
+        sources = sorted(
+            df_current["source"].unique()
+        )
 
-        selected_sources = st.multiselect(
+        selected_sources = st.sidebar.multiselect(
             "Filter by Source",
             options=sources,
             default=sources
         )
 
-        keyword = st.text_input("Search keyword")
+        keyword = st.sidebar.text_input(
+            "Search keyword"
+        )
 
         filtered_df = df_current[
-            df_current["source"].isin(selected_sources)
+            df_current["source"].isin(
+                selected_sources
+            )
         ]
 
         if keyword:
+
             filtered_df = filtered_df[
                 filtered_df["title"].str.contains(
                     keyword,
@@ -369,26 +412,42 @@ if st.button("🔄 Refresh News"):
             ]
 
         # -----------------------------------
-        # DISPLAY NEWS
+        # SORT DATA
+        # -----------------------------------
+
+        filtered_df = filtered_df.sort_values(
+            by="source"
+        )
+
+        # -----------------------------------
+        # DISPLAY NEWS GROUPED BY SOURCE
         # -----------------------------------
 
         st.subheader("📰 Latest News")
 
-        for _, row in filtered_df.iterrows():
+        grouped_news = filtered_df.groupby("source")
 
-            st.markdown(
-                f"""
-                ### [{row['title']}]({row['link']})
-                **Source:** {row['source']}
-                ---
-                """
-            )
+        for source, news_group in grouped_news:
+
+            # Mostrar fuente una sola vez
+            st.markdown(f"## {source}")
+
+            # Mostrar noticias
+            for _, row in news_group.iterrows():
+
+                st.markdown(
+                    f"- [{row['title']}]({row['link']})"
+                )
+
+            st.markdown("---")
 
         # -----------------------------------
         # DOWNLOAD CSV
         # -----------------------------------
 
-        csv = filtered_df.to_csv(index=False).encode("utf-8")
+        csv = filtered_df.to_csv(
+            index=False
+        ).encode("utf-8")
 
         st.download_button(
             label="📥 Download CSV",
@@ -398,5 +457,7 @@ if st.button("🔄 Refresh News"):
         )
 
 else:
-    st.info("Click 'Refresh News' to load latest articles.")
 
+    st.info(
+        "Click on 'Refresh News' to load the latest articles."
+    )   
